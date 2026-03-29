@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHER // PRESTIGE</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot" id="cursor-dot"></div>
+    <div class="cursor-ring" id="cursor-ring"></div>
+
+    <!-- Cinematic Intro Curtain -->
+    <div id="intro-curtain">
+        <div class="curtain-brand">AETHER</div>
+        <div class="curtain-tagline">// PRESTIGE</div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="stage-lighting" id="stage-spotlight"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="ui-wrapper">
+        <header class="top-bar">
+            <div class="brand-container">
+                <h1 class="brand">AETHER</h1>
+            </div>
+            
+            <nav class="central-nav">
+                <button class="nav-link active" onclick="showSection('shop')">Shop</button>
+                <button class="nav-link" onclick="showSection('about')">About Me</button>
+                <button class="nav-link" onclick="showSection('studio')">Studio</button>
+                <button class="nav-link" onclick="showSection('support')">Support</button>
+            </nav>
+
+            <button class="hamburger" id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+
+            <div class="user-controls">
+                <div class="bag-status" onclick="toggleCart()" style="cursor: pointer;">
+                    Cart (<span id="bag-count">0</span>)
+                </div>
+                <div class="auth-group">
+                    <button class="auth-link" onclick="toggleAuth()">Login</button>
+                    <button class="auth-link signup" onclick="toggleAuth()">Sign Up</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="focus-area" id="main-experience">
+            <div class="filter-shelf">
+                <button class="filter-opt active" onclick="setFilter('All', this)">Latest</button>
+                <button class="filter-opt" onclick="setFilter('Hardware', this)">Hardware</button>
+                <button class="filter-opt" onclick="setFilter('Digital', this)">Digital</button>
+            </div>
+
+            <div class="product-showcase">
+                <div class="object-preview">
+                    <div class="object-display-box" id="main-display"></div>
+                    <div class="object-glow"></div>
+                </div>
+                
+                <div class="object-info">
+                    <div class="info-header">
+                        <span class="category-tag" id="obj-cat">Hardware</span>
+                        <h2 id="obj-name">Obsidian Core</h2>
+                    </div>
+                    
+                    <p class="description" id="obj-desc">Initializing product interface...</p>
+                    <span class="stock-badge" id="obj-stock">In Stock</span>
+
+                    <div class="price-action">
+                        <span class="price" id="obj-price" style="font-size: 1.5rem; font-weight: 300;">$0</span>
+                        <button class="buy-trigger" onclick="addToBag()">Add to Cart</button>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="selection-rail" id="selection-rail"></footer>
+        </main>
+        
+        <section id="content-overlay"></section>
+    </div>
+
+    <div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h2 class="cart-title">Your Cart</h2>
+            <button class="close-cart" onclick="toggleCart()" aria-label="Close cart">
+                <span></span><span></span>
+            </button>
+        </div>
+        
+        <div class="cart-items" id="cart-items-list">
+            <p class="empty-msg">Your cart is empty.</p>
+        </div>
+
+        <div class="cart-footer">
+            <div class="total-row">
+                <span>Subtotal</span>
+                <span id="cart-total">$0</span>
+            </div>
+            <button class="checkout-btn" onclick="openCheckout()">Checkout</button>
+        </div>
+    </div>
+
+    <div class="auth-overlay" id="auth-overlay" onclick="toggleAuth()"></div>
+    <div class="auth-modal" id="auth-modal">
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" onclick="switchAuth('login')">Login</button>
+                <button class="auth-tab" id="tab-signup" onclick="switchAuth('signup')">Sign Up</button>
+                <div class="auth-tab-indicator" id="auth-tab-indicator"></div>
+            </div>
+
+            <div class="auth-content">
+                <h2 id="auth-title">Welcome Back</h2>
+                <p id="auth-subtitle">Secure access to your Aether prestige account.</p>
+                
+                <form class="auth-form" id="auth-form" onsubmit="handleAuthSubmit(event)">
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" placeholder="name@domain.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" placeholder="••••••••" required>
+                    </div>
+                    <div class="input-group signup-only" id="confirm-pass-group">
+                        <label>Confirm Password</label>
+                        <input type="password" placeholder="••••••••">
+                    </div>
+                    
+                    <button type="submit" class="auth-submit-btn" id="auth-submit">Continue</button>
+                </form>
+                
+                <button class="auth-close" onclick="toggleAuth()">Return to Store</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Auth SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+    <!-- Checkout Modal -->
+    <div class="checkout-overlay" id="checkout-overlay" onclick="closeCheckout()"></div>
+    <div class="checkout-modal" id="checkout-modal">
+        <button class="close-cart co-close" onclick="closeCheckout()" aria-label="Close"><span></span><span></span></button>
+
+        <div class="co-progress">
+            <div class="co-prog-step active" id="cop-1"><div class="cop-dot">1</div><span>Review</span></div>
+            <div class="cop-line" id="copl-1"></div>
+            <div class="co-prog-step" id="cop-2"><div class="cop-dot">2</div><span>Details</span></div>
+            <div class="cop-line" id="copl-2"></div>
+            <div class="co-prog-step" id="cop-3"><div class="cop-dot">3</div><span>Payment</span></div>
+            <div class="cop-line" id="copl-3"></div>
+            <div class="co-prog-step" id="cop-4"><div class="cop-dot">4</div><span>Confirm</span></div>
+        </div>
+
+        <div class="co-body">
+
+            <!-- Step 1: Review -->
+            <div class="co-panel" id="co-p1">
+                <h3 class="co-title">Order Review</h3>
+                <div id="co-items"></div>
+                <div class="co-subtotal"><span>Total</span><strong id="co-total-display"></strong></div>
+                <div class="co-actions">
+                    <button class="checkout-btn" onclick="checkoutStep(2)">Continue to Details &rarr;</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Details -->
+            <div class="co-panel co-hidden" id="co-p2">
+                <h3 class="co-title">Your Details</h3>
+                <form onsubmit="event.preventDefault(); checkoutStep(3)">
+                    <div class="co-row">
+                        <div class="input-group"><label>First Name</label><input type="text" id="co-fname" placeholder="Seally" required></div>
+                        <div class="input-group"><label>Last Name</label><input type="text" id="co-lname" placeholder="Smith" required></div>
+                    </div>
+                    <div class="input-group"><label>Email Address</label><input type="email" id="co-email" placeholder="you@domain.com" required></div>
+                    <div class="input-group"><label>Shipping Address</label><input type="text" id="co-addr" placeholder="123 Main Street" required></div>
+                    <div class="co-row">
+                        <div class="input-group"><label>City</label><input type="text" id="co-city" placeholder="New York" required></div>
+                        <div class="input-group"><label>Postal Code</label><input type="text" id="co-post" placeholder="10001" required></div>
+                    </div>
+                    <div class="co-actions co-split">
+                        <button type="button" class="co-back" onclick="checkoutStep(1)">&larr; Back</button>
+                        <button type="submit" class="checkout-btn">Continue to Payment &rarr;</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 3: Payment -->
+            <div class="co-panel co-hidden" id="co-p3">
+                <h3 class="co-title">Payment</h3>
+                <p class="co-secure">
+                    <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><path d="M5.5 0L0 2.3v3.7C0 9.2 2.75 12 5.5 13 8.25 12 11 9.2 11 6V2.3L5.5 0z" fill="rgba(255,255,255,0.25)"/></svg>
+                    256-bit SSL encrypted &mdash; your card is never stored
+                </p>
+                <form onsubmit="event.preventDefault(); submitPayment()">
+                    <div class="input-group">
+                        <label>Card Number</label>
+                        <div class="card-field-wrap">
+                            <input type="text" id="co-cnum" placeholder="0000  0000  0000  0000" maxlength="19" autocomplete="cc-number" oninput="onCardNumInput(this)" required>
+                            <span class="ctype-badge" id="ctype-badge"></span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Name on Card</label>
+                        <input type="text" id="co-cname" placeholder="Seally" autocomplete="cc-name" required>
+                    </div>
+                    <div class="co-row">
+                        <div class="input-group">
+                            <label>Expiry</label>
+                            <input type="text" id="co-exp" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="onExpiryInput(this)" required>
+                        </div>
+                        <div class="input-group">
+                            <label>CVV</label>
+                            <input type="password" id="co-cvv" placeholder="&bull;&bull;&bull;" maxlength="4" autocomplete="cc-csc" oninput="this.value=this.value.replace(/\D/g,'')" required>
+                        </div>
+                    </div>
+                    <div class="co-actions co-split">
+                        <button type="button" class="co-back" onclick="checkoutStep(2)">&larr; Back</button>
+                        <button type="submit" class="checkout-btn" id="co-pay-btn">Pay <span id="co-pay-amt"></span></button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 4: Confirmation -->
+            <div class="co-panel co-hidden" id="co-p4">
+                <div class="co-confirm">
+                    <div class="co-check-wrap">
+                        <svg class="co-check-svg" viewBox="0 0 52 52">
+                            <circle class="co-check-circle" cx="26" cy="26" r="24"/>
+                            <path class="co-check-tick" d="M14 27l8 8 16-16"/>
+                        </svg>
+                    </div>
+                    <h3 class="co-title" style="margin-top:24px">Order Placed</h3>
+                    <p class="co-order-ref">Reference <strong id="co-ref"></strong></p>
+                    <p class="description" style="text-align:center;margin:0 auto 36px;max-width:340px">
+                        Thank you. A confirmation will be sent to your email shortly.
+                    </p>
+                    <button class="checkout-btn" onclick="closeCheckoutAndClear()">Continue Shopping</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="logic.js"></script>
+</body>
+</html>
