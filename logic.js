@@ -14,15 +14,16 @@ const FIREBASE_CONFIG = {
     projectId:         "signups-e5d08",
     storageBucket:     "signups-e5d08.firebasestorage.app",
     messagingSenderId: "430613621679",
-    appId:             "1:430613621679:web:8b45e2a9dcaa4998b7dd5a"
+    appId:             "1:430613621679:web:8b45e2a9dcaa4998b7dd5a",
+    measurementId:     "G-3PG8M0RCVB"
 };
 
 let auth = null;
 try {
-    if (FIREBASE_CONFIG.apiKey !== 'AIzaSyD0Mcs52uZG4f6qPdeYGOhpYbLFq6j2anE') {
-        firebase.initializeApp(FIREBASE_CONFIG);
-        auth = firebase.auth();
-    }
+    const app = firebase.apps.length
+        ? firebase.app()
+        : firebase.initializeApp(FIREBASE_CONFIG);
+    auth = app.auth();
 } catch(e) {
     console.warn('Firebase init error:', e.message);
 }
@@ -67,6 +68,16 @@ const PRODUCTS = [
         desc: 'A curated collection of digital textures and shaders for high-end visual production.',
         visual: 'radial-gradient(ellipse at 40% 60%, #001a0d 0%, #080808 55%), radial-gradient(ellipse at 75% 20%, #003319 0%, transparent 55%)',
         accentColor: '#00cc66',
+        stock: 'In Stock'
+    },
+    {
+        id: '5',
+        name: 'Test Item',
+        price: 0,
+        cat: 'Digital',
+        desc: 'Free test item — use this to verify checkout flow without being charged.',
+        visual: 'radial-gradient(ellipse at 50% 50%, #0a0a0a 0%, #030303 80%)',
+        accentColor: '#444444',
         stock: 'In Stock'
     }
 ];
@@ -667,11 +678,12 @@ function detectCardType(num) {
 }
 
 function onCardNumInput(el) {
-    const raw   = el.value.replace(/\D/g, '').substr(0, 16);
+    const raw    = el.value.replace(/\D/g, '').substr(0, 16);
     const isAmex = /^3[47]/.test(raw);
+    // Single space between groups so 16-digit cards fit in maxlength="19"
     el.value = isAmex
-        ? raw.replace(/^(\d{4})(\d{0,6})(\d{0,5}).*/, (_, a, b, c) => [a, b, c].filter(Boolean).join('  '))
-        : raw.replace(/(\d{4})(?=\d)/g, '$1  ');
+        ? raw.replace(/^(\d{4})(\d{0,6})(\d{0,5}).*/, (_, a, b, c) => [a, b, c].filter(Boolean).join(' '))
+        : raw.replace(/(\d{4})(?=\d)/g, '$1 ');
     const badge = document.getElementById('ctype-badge');
     if (badge) badge.innerText = detectCardType(raw);
 }
@@ -687,8 +699,10 @@ function submitPayment() {
     const cvv  = document.getElementById('co-cvv').value;
     const name = document.getElementById('co-cname').value.trim();
 
-    // Luhn check
-    if (num.length < 16 || !luhn(num)) { showToast('Invalid card number'); return; }
+    // Luhn check — 15 digits for AMEX, 16 for everything else
+    const isAmexNum = /^3[47]/.test(num);
+    const minLen = isAmexNum ? 15 : 16;
+    if (num.length < minLen || !luhn(num)) { showToast('Invalid card number'); return; }
 
     // Expiry check
     const parts = exp.replace(/\s/g, '').split('/');
