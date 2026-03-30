@@ -9,12 +9,12 @@
 // console.firebase.google.com → Project Settings → Your Apps
 // ============================================================
 const FIREBASE_CONFIG = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_PROJECT.firebaseapp.com",
-    projectId:         "YOUR_PROJECT_ID",
-    storageBucket:     "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId:             "YOUR_APP_ID"
+    apiKey:            "AIzaSyD0Mcs52uZG4f6qPdeYGOhpYbLFq6j2anE",
+    authDomain:        "signups-e5d08.firebaseapp.com",
+    projectId:         "signups-e5d08",
+    storageBucket:     "signups-e5d08.firebasestorage.app",
+    messagingSenderId: "430613621679",
+    appId:             "1:430613621679:web:8b45e2a9dcaa4998b7dd5a"
 };
 
 let auth = null;
@@ -688,7 +688,7 @@ function submitPayment() {
     const name = document.getElementById('co-cname').value.trim();
 
     // Luhn check
-    if (num.length < 13 || !luhn(num)) { showToast('Invalid card number'); return; }
+    if (num.length < 16 || !luhn(num)) { showToast('Invalid card number'); return; }
 
     // Expiry check
     const parts = exp.replace(/\s/g, '').split('/');
