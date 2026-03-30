@@ -19,7 +19,7 @@ const FIREBASE_CONFIG = {
 
 let auth = null;
 try {
-    if (FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY') {
+    if (FIREBASE_CONFIG.apiKey !== 'AIzaSyD0Mcs52uZG4f6qPdeYGOhpYbLFq6j2anE') {
         firebase.initializeApp(FIREBASE_CONFIG);
         auth = firebase.auth();
     }
