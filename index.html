@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AETHER // PRESTIGE</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
 
     <!-- Custom Cursor -->
@@ -30,7 +33,7 @@
             <div class="brand-container">
                 <h1 class="brand">AETHER</h1>
             </div>
-            
+
             <nav class="central-nav">
                 <button class="nav-link active" onclick="showSection('shop')">Shop</button>
                 <button class="nav-link" onclick="showSection('about')">About Me</button>
@@ -54,10 +57,32 @@
         </header>
 
         <main class="focus-area" id="main-experience">
-            <div class="filter-shelf">
-                <button class="filter-opt active" onclick="setFilter('All', this)">Latest</button>
-                <button class="filter-opt" onclick="setFilter('Hardware', this)">Hardware</button>
-                <button class="filter-opt" onclick="setFilter('Digital', this)">Digital</button>
+            <div class="filter-controls-wrapper"
+                style="display: flex; align-items: center; gap: 40px; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+                <div class="filter-shelf" style="border: none; margin: 0; padding: 0;"></div>
+
+                <div style="width: 1px; height: 20px; background: var(--border);"></div>
+
+                <div class="advanced-filters" style="display: flex; gap: 25px; align-items: center;">
+                    <div class="filter-group">
+                        <select id="sort-dropdown" onchange="applyAdvancedFilters()"
+                            style="background: none; border: 1px solid #222; color: var(--grey); font-size: 9px; text-transform: uppercase; padding: 5px 10px; letter-spacing: 1px;">
+                            <option value="default">Sort: Manifest ID</option>
+                            <option value="price-low">Value: Ascending</option>
+                            <option value="price-high">Value: Descending</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group" style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 9px; color: #444; text-transform: uppercase; letter-spacing: 1px;">Max
+                            Value:</span>
+                        <input type="range" id="price-range" min="0" max="1000" value="1000"
+                            oninput="applyAdvancedFilters()"
+                            style="width: 100px; accent-color: var(--purple); opacity: 0.6;">
+                        <span id="range-val"
+                            style="font-size: 10px; font-family: monospace; color: var(--purple);">$1000</span>
+                    </div>
+                </div>
             </div>
 
             <div class="product-showcase">
@@ -65,26 +90,29 @@
                     <div class="object-display-box" id="main-display"></div>
                     <div class="object-glow"></div>
                 </div>
-                
+
                 <div class="object-info">
                     <div class="info-header">
                         <span class="category-tag" id="obj-cat">Hardware</span>
                         <h2 id="obj-name">Obsidian Core</h2>
                     </div>
-                    
+
                     <p class="description" id="obj-desc">Initializing product interface...</p>
                     <span class="stock-badge" id="obj-stock">In Stock</span>
 
                     <div class="price-action">
-                        <span class="price" id="obj-price" style="font-size: 1.5rem; font-weight: 300;">$0</span>
-                        <button class="buy-trigger" onclick="addToBag()">Add to Cart</button>
+                        <span class="price" id="obj-price">$95</span>
+                        <button class="buy-trigger" onclick="addToBag()">
+                            <span class="btn-text">Add to Cart</span>
+                            <div class="btn-glow"></div>
+                        </button>
                     </div>
                 </div>
             </div>
 
             <footer class="selection-rail" id="selection-rail"></footer>
         </main>
-        
+
         <section id="content-overlay"></section>
     </div>
 
@@ -96,7 +124,7 @@
                 <span></span><span></span>
             </button>
         </div>
-        
+
         <div class="cart-items" id="cart-items-list">
             <p class="empty-msg">Your cart is empty.</p>
         </div>
@@ -122,7 +150,7 @@
             <div class="auth-content">
                 <h2 id="auth-title">Welcome Back</h2>
                 <p id="auth-subtitle">Secure access to your Aether prestige account.</p>
-                
+
                 <form class="auth-form" id="auth-form" onsubmit="handleAuthSubmit(event)">
                     <div class="input-group">
                         <label>Email Address</label>
@@ -136,32 +164,52 @@
                         <label>Confirm Password</label>
                         <input type="password" placeholder="••••••••">
                     </div>
-                    
+
                     <button type="submit" class="auth-submit-btn" id="auth-submit">Continue</button>
                 </form>
-                
+
                 <button class="auth-close" onclick="toggleAuth()">Return to Store</button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase Auth SDK -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <!-- Stripe.js (real card payments) -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <!-- EmailJS (order confirmation emails) -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function () {
+            emailjs.init("8owMJfvNTD4m9CjkS");
+        })();
+    </script>
 
     <!-- Checkout Modal -->
     <div class="checkout-overlay" id="checkout-overlay" onclick="closeCheckout()"></div>
     <div class="checkout-modal" id="checkout-modal">
-        <button class="close-cart co-close" onclick="closeCheckout()" aria-label="Close"><span></span><span></span></button>
+        <button class="close-cart co-close" onclick="closeCheckout()"
+            aria-label="Close"><span></span><span></span></button>
 
         <div class="co-progress">
-            <div class="co-prog-step active" id="cop-1"><div class="cop-dot">1</div><span>Review</span></div>
+            <div class="co-prog-step active" id="cop-1">
+                <div class="cop-dot">1</div><span>Review</span>
+            </div>
             <div class="cop-line" id="copl-1"></div>
-            <div class="co-prog-step" id="cop-2"><div class="cop-dot">2</div><span>Details</span></div>
+            <div class="co-prog-step" id="cop-2">
+                <div class="cop-dot">2</div><span>Details</span>
+            </div>
             <div class="cop-line" id="copl-2"></div>
-            <div class="co-prog-step" id="cop-3"><div class="cop-dot">3</div><span>Payment</span></div>
+            <div class="co-prog-step" id="cop-3">
+                <div class="cop-dot">3</div><span>Payment</span>
+            </div>
             <div class="cop-line" id="copl-3"></div>
-            <div class="co-prog-step" id="cop-4"><div class="cop-dot">4</div><span>Confirm</span></div>
+            <div class="co-prog-step" id="cop-4">
+                <div class="cop-dot">4</div><span>Confirm</span>
+            </div>
         </div>
 
         <div class="co-body">
@@ -178,21 +226,23 @@
 
             <!-- Step 2: Details -->
             <div class="co-panel co-hidden" id="co-p2">
-                <h3 class="co-title">Your Details</h3>
-                <form onsubmit="event.preventDefault(); checkoutStep(3)">
-                    <div class="co-row">
-                        <div class="input-group"><label>First Name</label><input type="text" id="co-fname" placeholder="Seally" required></div>
-                        <div class="input-group"><label>Last Name</label><input type="text" id="co-lname" placeholder="Smith" required></div>
+                <h3 class="co-title">Shipping Details</h3>
+                <form onsubmit="event.preventDefault(); checkoutStep(3)" novalidate>
+                    <div class="input-group">
+                        <input type="text" id="co-fname" placeholder="First Name" required>
+                        <input type="text" id="co-lname" placeholder="Last Name" required>
                     </div>
-                    <div class="input-group"><label>Email Address</label><input type="email" id="co-email" placeholder="you@domain.com" required></div>
-                    <div class="input-group"><label>Shipping Address</label><input type="text" id="co-addr" placeholder="123 Main Street" required></div>
-                    <div class="co-row">
-                        <div class="input-group"><label>City</label><input type="text" id="co-city" placeholder="New York" required></div>
-                        <div class="input-group"><label>Postal Code</label><input type="text" id="co-post" placeholder="10001" required></div>
+                    <input type="email" id="co-email" placeholder="Email Address" required>
+
+                    <input type="text" id="co-addr" placeholder="Street Address" required style="margin-top:12px">
+                    <div class="input-group">
+                        <input type="text" id="co-city" placeholder="City" required>
+                        <input type="text" id="co-post" placeholder="Postcode / Zip" required>
                     </div>
-                    <div class="co-actions co-split">
-                        <button type="button" class="co-back" onclick="checkoutStep(1)">&larr; Back</button>
-                        <button type="submit" class="checkout-btn">Continue to Payment &rarr;</button>
+
+                    <div class="co-actions">
+                        <button type="button" class="co-back" onclick="checkoutStep(1)">Back</button>
+                        <button type="submit" class="checkout-btn">Next: Payment</button>
                     </div>
                 </form>
             </div>
@@ -201,34 +251,57 @@
             <div class="co-panel co-hidden" id="co-p3">
                 <h3 class="co-title">Payment</h3>
                 <p class="co-secure">
-                    <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><path d="M5.5 0L0 2.3v3.7C0 9.2 2.75 12 5.5 13 8.25 12 11 9.2 11 6V2.3L5.5 0z" fill="rgba(255,255,255,0.25)"/></svg>
-                    256-bit SSL encrypted &mdash; your card is never stored
+                    <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
+                        <path d="M5.5 0L0 2.3v3.7C0 9.2 2.75 12 5.5 13 8.25 12 11 9.2 11 6V2.3L5.5 0z"
+                            fill="currentColor" />
+                    </svg>
+                    256-bit SSL &mdash; Card details encrypted
                 </p>
-                <form onsubmit="event.preventDefault(); submitPayment()">
-                    <div class="input-group">
-                        <label>Card Number</label>
-                        <div class="card-field-wrap">
-                            <input type="text" id="co-cnum" placeholder="0000  0000  0000  0000" maxlength="19" autocomplete="cc-number" oninput="onCardNumInput(this)" required>
-                            <span class="ctype-badge" id="ctype-badge"></span>
-                        </div>
-                    </div>
+
+                <form onsubmit="event.preventDefault(); submitPayment()" novalidate>
                     <div class="input-group">
                         <label>Name on Card</label>
-                        <input type="text" id="co-cname" placeholder="Seally" autocomplete="cc-name" required>
+                        <input type="text" id="co-cname" placeholder="Full Name" autocomplete="cc-name" required>
                     </div>
-                    <div class="co-row">
+
+                    <div id="manual-card-fields">
                         <div class="input-group">
-                            <label>Expiry</label>
-                            <input type="text" id="co-exp" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="onExpiryInput(this)" required>
+                            <label>Card Number</label>
+                            <div class="card-field-wrap">
+                                <input type="text" id="co-cnum" placeholder="0000 0000 0000 0000" maxlength="19"
+                                    autocomplete="cc-number" inputmode="numeric" oninput="onCardNumInput(this)"
+                                    required>
+                                <span class="ctype-badge" id="ctype-badge"></span>
+                            </div>
                         </div>
-                        <div class="input-group">
-                            <label>CVV</label>
-                            <input type="password" id="co-cvv" placeholder="&bull;&bull;&bull;" maxlength="4" autocomplete="cc-csc" oninput="this.value=this.value.replace(/\D/g,'')" required>
+
+                        <div class="co-row">
+                            <div class="input-group">
+                                <label>Expiry</label>
+                                <input type="text" id="co-exp" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp"
+                                    inputmode="numeric" oninput="onExpiryInput(this)" required>
+                            </div>
+                            <div class="input-group">
+                                <label>CVV</label>
+                                <input type="password" id="co-cvv" placeholder="•••" maxlength="4" autocomplete="cc-csc"
+                                    inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" required>
+                            </div>
                         </div>
                     </div>
-                    <div class="co-actions co-split">
+
+                    <!-- Stripe Element (shown instead of manual fields when Stripe is active) -->
+                    <div id="stripe-card-wrap" style="display:none">
+                        <div class="input-group">
+                            <label>Card Details</label>
+                            <div id="stripe-card-element" class="stripe-element"></div>
+                            <div id="stripe-card-errors" class="stripe-errors" role="alert"></div>
+                        </div>
+                    </div>
+
+                    <div class="co-actions co-split" style="margin-top: 24px;">
                         <button type="button" class="co-back" onclick="checkoutStep(2)">&larr; Back</button>
-                        <button type="submit" class="checkout-btn" id="co-pay-btn">Pay <span id="co-pay-amt"></span></button>
+                        <button type="submit" class="checkout-btn" id="co-pay-btn">Pay <span
+                                id="co-pay-amt"></span></button>
                     </div>
                 </form>
             </div>
@@ -238,15 +311,20 @@
                 <div class="co-confirm">
                     <div class="co-check-wrap">
                         <svg class="co-check-svg" viewBox="0 0 52 52">
-                            <circle class="co-check-circle" cx="26" cy="26" r="24"/>
-                            <path class="co-check-tick" d="M14 27l8 8 16-16"/>
+                            <circle class="co-check-circle" cx="26" cy="26" r="24" />
+                            <path class="co-check-tick" d="M14 27l8 8 16-16" />
                         </svg>
                     </div>
                     <h3 class="co-title" style="margin-top:24px">Order Placed</h3>
                     <p class="co-order-ref">Reference <strong id="co-ref"></strong></p>
-                    <p class="description" style="text-align:center;margin:0 auto 36px;max-width:340px">
-                        Thank you. A confirmation will be sent to your email shortly.
+                    <p class="description" style="text-align:center;margin:0 auto 28px;max-width:340px">
+                        Thank you. A confirmation has been sent to your email.
                     </p>
+                    <a id="co-mailto-btn" class="co-back" style="display:none;margin-bottom:16px;text-decoration:none"
+                        target="_blank">
+                        &#9993;&nbsp; Open in Mail App
+                    </a>
+                    <br>
                     <button class="checkout-btn" onclick="closeCheckoutAndClear()">Continue Shopping</button>
                 </div>
             </div>
@@ -256,4 +334,5 @@
 
     <script src="logic.js"></script>
 </body>
+
 </html>

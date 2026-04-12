@@ -9,77 +9,120 @@
 // console.firebase.google.com → Project Settings → Your Apps
 // ============================================================
 const FIREBASE_CONFIG = {
-    apiKey:            "AIzaSyD0Mcs52uZG4f6qPdeYGOhpYbLFq6j2anE",
-    authDomain:        "signups-e5d08.firebaseapp.com",
-    projectId:         "signups-e5d08",
-    storageBucket:     "signups-e5d08.firebasestorage.app",
+    apiKey: "AIzaSyD0Mcs52uZG4f6qPdeYGOhpYbLFq6j2anE",
+    authDomain: "signups-e5d08.firebaseapp.com",
+    projectId: "signups-e5d08",
+    storageBucket: "signups-e5d08.firebasestorage.app",
     messagingSenderId: "430613621679",
-    appId:             "1:430613621679:web:8b45e2a9dcaa4998b7dd5a",
-    measurementId:     "G-3PG8M0RCVB"
+    appId: "1:430613621679:web:8b45e2a9dcaa4998b7dd5a",
+    measurementId: "G-3PG8M0RCVB"
 };
 
+// ============================================================
+// EMAILJS  — free client-side email (200 emails/month free)
+// Setup: https://www.emailjs.com
+//   1. Create account & connect your Gmail / Outlook
+//   2. Create an Email Template — use these variables:
+//        {{to_name}}   {{to_email}}   {{order_ref}}
+//        {{order_items}}   {{order_total}}
+//   3. Paste your IDs below
+// ============================================================
+const EMAILJS_CONFIG = {
+    publicKey: '8owMJfvNTD4m9CjkS',   // Account → General → Public Key
+    serviceId: 'service_az5dzea',           // Email Services tab
+    templateId: 'template_6cn963g'           // Email Templates tab
+};
+
+if (EMAILJS_CONFIG.publicKey && !EMAILJS_CONFIG.publicKey.startsWith('YOUR_')) {
+    emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey });
+}
+
+// ============================================================
+// STRIPE — real payment processing
+// 1. Sign up free at https://stripe.com
+// 2. Dashboard → Developers → API Keys
+//    Paste pk_test_… (test) or pk_live_… (live) below
+// 3. In Netlify: Site → Environment Variables → add
+//      STRIPE_SECRET_KEY = sk_test_… (never put secret key here!)
+// ============================================================
+const STRIPE_CONFIG = {
+    publishableKey: 'pk_test_51QzAXb2X1olQCjVK1ol0TDqtdw3Fh9TR1jRBKwZvht2aOREtOwosYkM9v57vnddMe96d4MDE2h0JU0Spsp0JUdkz001uWby7mz'
+};
+
+let stripe = null;
+let stripeCard = null;
+if (STRIPE_CONFIG.publishableKey && !STRIPE_CONFIG.publishableKey.startsWith('YOUR_')) {
+    stripe = Stripe(STRIPE_CONFIG.publishableKey);
+}
+
 let auth = null;
+let db = null;
 try {
     const app = firebase.apps.length
         ? firebase.app()
         : firebase.initializeApp(FIREBASE_CONFIG);
     auth = app.auth();
-} catch(e) {
+    db = app.firestore();
+} catch (e) {
     console.warn('Firebase init error:', e.message);
 }
 
 // 1. Data Architecture
 const PRODUCTS = [
-    { 
-        id: '1', 
-        name: 'Obsidian Core', 
-        price: 1200, 
-        cat: 'Hardware', 
-        desc: 'Our flagship hardware interface. Hand-crafted from aerospace-grade materials with seamless haptic integration.',
-        visual: 'radial-gradient(ellipse at 25% 75%, #2d0050 0%, #080808 55%), radial-gradient(ellipse at 75% 15%, #1a0033 0%, transparent 55%)',
+    // --- DRAWINGS SECTION ---
+    {
+        id: 'dr-1',
+        name: 'Bunny Girl',
+        price: 28.00,
+        cat: 'Art',
+        desc: 'Original traditional ink & graphite drawing on archival paper. Features dynamic character linework. Signed by the artist.',
+        visual: 'url("images/drawing1.jpg")', // Path to your drawing image
         accentColor: '#9d00ff',
-        stock: 'In Stock'
-    },
-    { 
-        id: '2', 
-        name: 'Neural Link', 
-        price: 450, 
-        cat: 'Digital', 
-        desc: 'High-speed data transfer module designed for low-latency neural processing environments.',
-        visual: 'radial-gradient(ellipse at 70% 30%, #001a3d 0%, #080808 55%), radial-gradient(ellipse at 20% 75%, #00264d 0%, transparent 55%)',
-        accentColor: '#0077ff',
-        stock: 'Low Stock'
-    },
-    { 
-        id: '3', 
-        name: 'Void Interface', 
-        price: 890, 
-        cat: 'Hardware', 
-        desc: 'Minimalist control surface featuring ultra-responsive tactile feedback and glass-top finish.',
-        visual: 'radial-gradient(ellipse at 50% 50%, #181818 0%, #080808 70%), radial-gradient(ellipse at 80% 80%, #222 0%, transparent 40%)',
-        accentColor: '#cccccc',
-        stock: 'In Stock'
-    },
-    { 
-        id: '4', 
-        name: 'Asset Pack 01', 
-        price: 120, 
-        cat: 'Digital', 
-        desc: 'A curated collection of digital textures and shaders for high-end visual production.',
-        visual: 'radial-gradient(ellipse at 40% 60%, #001a0d 0%, #080808 55%), radial-gradient(ellipse at 75% 20%, #003319 0%, transparent 55%)',
-        accentColor: '#00cc66',
-        stock: 'In Stock'
+        stock: 'Original' // Since it's a drawing, there's only 1!
     },
     {
-        id: '5',
-        name: 'Test Item',
-        price: 0,
-        cat: 'Digital',
-        desc: 'Free test item — use this to verify checkout flow without being charged.',
-        visual: 'radial-gradient(ellipse at 50% 50%, #0a0a0a 0%, #030303 80%)',
-        accentColor: '#444444',
-        stock: 'In Stock'
-    }
+        id: 'dr-2',
+        name: 'Seeing Through the Thin',
+        price: 35,
+        cat: 'Art',
+        desc: 'An intense stare. This close up eye sketch was my 5th drawing. Trying to capture detail and emotion through dramatic lashes and shading.',
+        visual: 'url("images/drawing2.jpg")',
+        accentColor: '#ff0055',
+        stock: 'Original'
+    },
+    {
+        id: 'dr-3',
+        name: 'Beauty within Chaos',
+        price: 30.00,
+        cat: 'Art',
+        desc: 'An exploration of dramatic hair movement and raw expression. This 4th-ever archival piece captures the transition from learning to mastery.',
+        visual: 'url("images/drawing3.jpg")', // Ensure this matches your file path
+        accentColor: '#ff0055',
+        stock: 'Original'
+    },
+    {
+        id: 'dr-4',
+        name: 'Demons in the Details',
+        price: 40.00,
+        cat: 'Art',
+        desc: 'My 14th drawing ever and focused on capturing sharp horns, fluid hair, and a strong expression. Loved playing with the dark shading!',
+        visual: 'url("images/drawing4.jpg")', // Ensure this matches your file path
+        accentColor: '#ff0055',
+        stock: 'Original'
+    },
+    // ... Repeat for 7 drawings total ...
+
+    // --- POKEMON CARDS SECTION ---
+    {
+        id: 'pk-2',
+        name: 'Krookodile EX // XY25',
+        price: 10.00,
+        cat: 'Collectibles',
+        desc: 'XY Black Star Promo. Features the signature "Second Bite" and "Megaton Fang" moves. Holographic finish. Near Mint (NM).',
+        visual: 'url("images/krookodile.jpg")', // Ensure this matches your filename
+        accentColor: '#8b0000', // Deep Crimson to match the card's art
+        stock: '1 Left'
+    },
 ];
 
 let state = {
@@ -126,7 +169,7 @@ window.onload = () => {
         (function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             pts.forEach(p => {
-                p.x = (p.x + p.vx + canvas.width)  % canvas.width;
+                p.x = (p.x + p.vx + canvas.width) % canvas.width;
                 p.y = (p.y + p.vy + canvas.height) % canvas.height;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -138,21 +181,21 @@ window.onload = () => {
     })();
 
     // --- Custom Cursor ---
-    const dot  = document.getElementById('cursor-dot');
+    const dot = document.getElementById('cursor-dot');
     const ring = document.getElementById('cursor-ring');
     let ringX = window.innerWidth / 2, ringY = window.innerHeight / 2;
-    let dotX  = ringX, dotY = ringY;
+    let dotX = ringX, dotY = ringY;
 
     document.addEventListener('mousemove', e => {
         dotX = e.clientX;
         dotY = e.clientY;
         dot.style.left = dotX + 'px';
-        dot.style.top  = dotY + 'px';
+        dot.style.top = dotY + 'px';
 
         // Live spotlight
         const spotlight = document.getElementById('stage-spotlight');
         if (spotlight) {
-            const xp = ((e.clientX / window.innerWidth)  * 100).toFixed(1);
+            const xp = ((e.clientX / window.innerWidth) * 100).toFixed(1);
             const yp = ((e.clientY / window.innerHeight) * 100).toFixed(1);
             spotlight.style.background =
                 `radial-gradient(circle at ${xp}% ${yp}%, #1f1f1f 0%, #030303 68%)`;
@@ -161,7 +204,7 @@ window.onload = () => {
         // Product display parallax
         const display = document.getElementById('main-display');
         if (display) {
-            const xShift = ((e.clientX / window.innerWidth)  - 0.5) * 14;
+            const xShift = ((e.clientX / window.innerWidth) - 0.5) * 14;
             const yShift = ((e.clientY / window.innerHeight) - 0.5) * 9;
             display.style.transform = `translate(${xShift}px, ${yShift}px)`;
         }
@@ -171,7 +214,7 @@ window.onload = () => {
         ringX += (dotX - ringX) * 0.11;
         ringY += (dotY - ringY) * 0.11;
         ring.style.left = ringX + 'px';
-        ring.style.top  = ringY + 'px';
+        ring.style.top = ringY + 'px';
         requestAnimationFrame(animateRing);
     })();
 
@@ -183,17 +226,17 @@ window.onload = () => {
     // --- Keyboard Shortcuts ---
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
-            if (document.getElementById('cart-sidebar').classList.contains('open'))  toggleCart();
+            if (document.getElementById('cart-sidebar').classList.contains('open')) toggleCart();
             else if (document.getElementById('auth-modal').classList.contains('open')) toggleAuth();
         }
         if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') &&
-             document.getElementById('main-experience').style.display !== 'none') {
+            document.getElementById('main-experience').style.display !== 'none') {
             const activeFilter = document.querySelector('.filter-opt.active');
             const filterCat = activeFilter ? activeFilter.innerText : 'Latest';
             const visible = filterCat === 'Latest'
                 ? PRODUCTS
                 : PRODUCTS.filter(p => p.cat === filterCat);
-            const idx  = visible.findIndex(p => p.id === state.currentProduct.id);
+            const idx = visible.findIndex(p => p.id === state.currentProduct.id);
             const next = e.key === 'ArrowRight'
                 ? visible[(idx + 1) % visible.length]
                 : visible[(idx - 1 + visible.length) % visible.length];
@@ -201,6 +244,11 @@ window.onload = () => {
             updateDisplay(true);
         }
     });
+
+    // --- Firebase Auth State (persist login across page loads) ---
+    if (auth) {
+        auth.onAuthStateChanged(user => updateAuthUI(user));
+    }
 };
 
 /**
@@ -208,7 +256,7 @@ window.onload = () => {
  */
 function showSection(sectionName) {
     const shopExperience = document.getElementById('main-experience');
-    const contentOverlay  = document.getElementById('content-overlay');
+    const contentOverlay = document.getElementById('content-overlay');
 
     // Close mobile nav
     const nav = document.querySelector('.central-nav');
@@ -222,7 +270,7 @@ function showSection(sectionName) {
     });
 
     const currentEl = shopExperience.style.display !== 'none' ? shopExperience : contentOverlay;
-    const isVisible  = currentEl && currentEl.offsetParent !== null;
+    const isVisible = currentEl && currentEl.offsetParent !== null;
 
     const doSwitch = () => {
         if (sectionName === 'shop' || sectionName === 'collection') {
@@ -233,6 +281,7 @@ function showSection(sectionName) {
             shopExperience.style.display = 'none';
             contentOverlay.style.display = 'flex';
             contentOverlay.innerHTML = getSectionHTML(sectionName);
+            if (sectionName === 'account') loadOrders();
         }
     };
 
@@ -317,6 +366,15 @@ function getSectionHTML(name) {
             <button class="auth-close" onclick="showSection('shop')">Back to Shop</button>
         </div>`;
 
+    if (name === 'account') return `
+        <div class="about-content-fade" style="max-width:720px;width:100%;text-align:left;">
+            <span class="category-tag">My Account</span>
+            <h2>Order<br>History</h2>
+            <div id="orders-loading" class="orders-loading">Loading your orders&hellip;</div>
+            <div id="orders-list"></div>
+            <button class="auth-close" style="margin-top:28px" onclick="showSection('shop')">Back to Shop</button>
+        </div>`;
+
     return '';
 }
 
@@ -328,18 +386,18 @@ function updateDisplay(animate = false) {
     const p = state.currentProduct;
     if (!p) return;
 
-    const info    = document.querySelector('.object-info');
+    const info = document.querySelector('.object-info');
     const display = document.getElementById('main-display');
-    const glow    = document.querySelector('.object-glow');
+    const glow = document.querySelector('.object-glow');
 
     const applyContent = () => {
-        document.getElementById('obj-name').innerText  = p.name;
-        document.getElementById('obj-cat').innerText   = p.cat;
-        document.getElementById('obj-desc').innerText  = p.desc;
+        document.getElementById('obj-name').innerText = p.name;
+        document.getElementById('obj-cat').innerText = p.cat;
+        document.getElementById('obj-desc').innerText = p.desc;
         document.getElementById('obj-price').innerText = `$${p.price.toLocaleString()}`;
 
-        if (display && p.visual)      display.style.background = p.visual;
-        if (glow    && p.accentColor) glow.style.background    = p.accentColor;
+        if (display && p.visual) display.style.background = p.visual;
+        if (glow && p.accentColor) glow.style.background = p.accentColor;
 
         const stockEl = document.getElementById('obj-stock');
         if (stockEl) {
@@ -367,22 +425,79 @@ function updateDisplay(animate = false) {
 }
 
 function setFilter(category, element) {
-    // UI Visual Feedback
+    // UI Visual Feedback for Top Nav
     document.querySelectorAll('.filter-opt').forEach(btn => btn.classList.remove('active'));
     element.classList.add('active');
 
-    const filtered = (category === 'All') 
-        ? PRODUCTS 
+    // Filtering logic
+    const filtered = (category === 'All')
+        ? PRODUCTS
         : PRODUCTS.filter(p => p.cat === category);
 
     renderRail(filtered);
 
-    // If current product isn't in filtered list, snap to first available
+    // Auto-select first item in new category if current item is hidden
     if (filtered.length > 0 && !filtered.find(p => p.id === state.currentProduct.id)) {
         state.currentProduct = filtered[0];
         updateDisplay();
     }
 }
+
+// Helper to render the dynamic category buttons
+function initCategoryMenu() {
+    const shelf = document.querySelector('.filter-shelf');
+    const categories = ['All', ...new Set(PRODUCTS.map(p => p.cat))];
+
+    shelf.innerHTML = categories.map(cat => `
+        <button class="filter-opt ${cat === 'All' ? 'active' : ''}" 
+                onclick="setFilter('${cat}', this)">
+            ${cat}
+        </button>
+    `).join('');
+}
+
+function renderDynamicFilters() {
+    const filterShelf = document.querySelector('.filter-shelf');
+    // Extract unique categories from your product list
+    const categories = ['All', ...new Set(PRODUCTS.map(p => p.cat))];
+
+    filterShelf.innerHTML = categories.map(cat => `
+        <button class="filter-opt ${cat === 'All' ? 'active' : ''}" 
+                onclick="setFilter('${cat}', this)">
+            ${cat.toUpperCase()}
+        </button>
+    `).join('');
+}
+
+function applyAdvancedFilters() {
+    const cat = document.querySelector('.filter-opt.active').innerText;
+    const maxPrice = document.getElementById('price-range').value;
+    const sortBy = document.getElementById('sort-dropdown').value;
+
+    // Update Slider Label
+    document.getElementById('range-val').innerText = `$${maxPrice}`;
+
+    let filtered = PRODUCTS.filter(p => {
+        const matchesCat = (cat === 'ALL' || p.cat.toUpperCase() === cat);
+        const matchesPrice = p.price <= maxPrice;
+        return matchesCat && matchesPrice;
+    });
+
+    // Sorting
+    if (sortBy === 'price-low') filtered.sort((a, b) => a.price - b.price);
+    if (sortBy === 'price-high') filtered.sort((a, b) => b.price - a.price);
+
+    renderRail(filtered);
+
+    // UI Snap
+    if (filtered.length > 0 && !filtered.find(p => p.id === state.currentProduct.id)) {
+        state.currentProduct = filtered[0];
+        updateDisplay();
+    }
+}
+
+// Call this once when the page loads
+renderDynamicFilters();
 
 function renderRail(items) {
     const rail = document.getElementById('selection-rail');
@@ -390,14 +505,21 @@ function renderRail(items) {
 
     items.forEach(item => {
         const div = document.createElement('div');
-        div.className = `rail-item ${state.currentProduct.id === item.id ? 'active' : ''}`;
+        const isActive = state.currentProduct && state.currentProduct.id === item.id;
+
+        div.className = `rail-item ${isActive ? 'active' : ''}`;
         div.dataset.id = item.id;
+
         div.onclick = () => {
             state.currentProduct = item;
             updateDisplay(true);
         };
+
+        // We clean the visual string to ensure it uses single quotes internally
+        const cleanVisual = item.visual.replace(/"/g, "'");
+
         div.innerHTML = `
-            <div class="thumb-box" style="background: ${item.visual || ''}; background-size: cover;"></div>
+            <div class="thumb-box" style="background-image: ${cleanVisual}; background-size: cover; background-position: center;"></div>
             <span class="thumb-label">${item.name}</span>
         `;
         rail.appendChild(div);
@@ -490,7 +612,7 @@ function renderCart() {
     const count = state.cart.reduce((s, i) => s + i.qty, 0);
     document.getElementById('bag-count').innerText = count;
 
-    const list    = document.getElementById('cart-items-list');
+    const list = document.getElementById('cart-items-list');
     const totalEl = document.getElementById('cart-total');
 
     if (state.cart.length === 0) {
@@ -542,23 +664,41 @@ function toggleMobileNav() {
 // ============================================================
 // FIREBASE AUTH HANDLERS
 // ============================================================
+function updateAuthUI(user) {
+    const grp = document.querySelector('.auth-group');
+    if (!grp) return;
+    if (user) {
+        const name = (user.displayName || user.email.split('@')[0]);
+        grp.innerHTML = `
+            <span class="auth-user-name" onclick="showSection('account')" title="My Orders">${name}</span>
+            <button class="auth-link signup" onclick="handleSignOut()">Sign Out</button>
+        `;
+    } else {
+        grp.innerHTML = `
+            <button class="auth-link" onclick="toggleAuth()">Login</button>
+            <button class="auth-link signup" onclick="toggleAuth()">Sign Up</button>
+        `;
+    }
+}
+
 function handleAuthSubmit(e) {
     e.preventDefault();
     if (!auth) { showToast('Auth not configured — fill in FIREBASE_CONFIG'); return; }
 
-    const email    = document.querySelector('#auth-form input[type="email"]').value.trim();
+    const email = document.querySelector('#auth-form input[type="email"]').value.trim();
     const password = document.querySelector('#auth-form input[type="password"]').value;
-    const isLogin  = document.getElementById('tab-login').classList.contains('active');
-    const btn      = document.getElementById('auth-submit');
+    const isLogin = document.getElementById('tab-login').classList.contains('active');
+    const btn = document.getElementById('auth-submit');
 
     btn.disabled = true;
-    btn.innerText = 'Please wait...';
+    btn.innerText = 'Please wait…';
 
     const op = isLogin
         ? auth.signInWithEmailAndPassword(email, password)
         : auth.createUserWithEmailAndPassword(email, password);
 
-    op.then(() => {
+    op.then(cred => {
+        updateAuthUI(cred.user);   // Update header immediately — don’t wait for listener
         toggleAuth();
         showToast(isLogin ? 'Welcome back' : 'Account created — welcome to Aether');
         btn.disabled = false;
@@ -567,20 +707,20 @@ function handleAuthSubmit(e) {
         btn.disabled = false;
         btn.innerText = isLogin ? 'Continue' : 'Join Aether';
         const msgs = {
-            'auth/user-not-found':       'No account found with that email.',
-            'auth/wrong-password':       'Incorrect password. Please try again.',
-            'auth/invalid-credential':   'Incorrect email or password.',
+            'auth/user-not-found': 'No account found with that email.',
+            'auth/wrong-password': 'Incorrect password. Please try again.',
+            'auth/invalid-credential': 'Incorrect email or password.',
             'auth/email-already-in-use': 'An account with this email already exists.',
-            'auth/weak-password':        'Password must be at least 6 characters.',
-            'auth/invalid-email':        'Please enter a valid email address.',
-            'auth/too-many-requests':    'Too many attempts. Please try again later.',
+            'auth/weak-password': 'Password must be at least 6 characters.',
+            'auth/invalid-email': 'Please enter a valid email address.',
+            'auth/too-many-requests': 'Too many attempts. Please try again later.',
         };
         showToast(msgs[err.code] || 'Something went wrong. Please try again.');
     });
 }
 
 function handleSignOut() {
-    if (auth) auth.signOut().then(() => showToast('Signed out'));
+    if (auth) auth.signOut().then(() => { updateAuthUI(null); showToast('Signed out'); });
 }
 
 // ============================================================
@@ -595,6 +735,12 @@ function openCheckout() {
     const total = state.cart.reduce((s, i) => s + i.product.price * i.qty, 0);
     const payAmt = document.getElementById('co-pay-amt');
     if (payAmt) payAmt.innerText = `$${total.toLocaleString()}`;
+    const payBtn = document.getElementById('co-pay-btn');
+    if (payBtn) {
+        payBtn.innerHTML = total === 0
+            ? 'Place Order &mdash; Free'
+            : `Pay <span>$${total.toLocaleString()}</span>`;
+    }
     showCoStep(1);
     document.getElementById('checkout-modal').classList.add('open');
     document.getElementById('checkout-overlay').classList.add('active');
@@ -638,11 +784,11 @@ function checkoutStep(n) {
 function showCoStep(n) {
     for (let i = 1; i <= 4; i++) {
         const panel = document.getElementById(`co-p${i}`);
-        const prog  = document.getElementById(`cop-${i}`);
-        const line  = document.getElementById(`copl-${i}`);
+        const prog = document.getElementById(`cop-${i}`);
+        const line = document.getElementById(`copl-${i}`);
         if (panel) panel.classList.toggle('co-hidden', i !== n);
-        if (prog)  { prog.classList.toggle('active', i === n); prog.classList.toggle('done', i < n); }
-        if (line)  { line.classList.toggle('done', i < n); }
+        if (prog) { prog.classList.toggle('active', i === n); prog.classList.toggle('done', i < n); }
+        if (line) { line.classList.toggle('done', i < n); }
     }
     coStep = n;
     // Scroll modal body back to top
@@ -653,6 +799,8 @@ function showCoStep(n) {
         const ef = document.getElementById('co-email');
         if (ef && !ef.value) ef.value = auth.currentUser.email;
     }
+    // Mount Stripe card element when payment step becomes visible
+    if (n === 3) setTimeout(mountStripeCard, 80);
 }
 
 // ============================================================
@@ -670,15 +818,15 @@ function luhn(num) {
 
 function detectCardType(num) {
     const n = num.replace(/\s/g, '');
-    if (/^4/.test(n))                      return 'VISA';
+    if (/^4/.test(n)) return 'VISA';
     if (/^(5[1-5]|2[2-7]\d{2})/.test(n)) return 'MC';
-    if (/^3[47]/.test(n))                  return 'AMEX';
-    if (/^(6011|65|64[4-9])/.test(n))     return 'DISC';
+    if (/^3[47]/.test(n)) return 'AMEX';
+    if (/^(6011|65|64[4-9])/.test(n)) return 'DISC';
     return '';
 }
 
 function onCardNumInput(el) {
-    const raw    = el.value.replace(/\D/g, '').substr(0, 16);
+    const raw = el.value.replace(/\D/g, '').substr(0, 16);
     const isAmex = /^3[47]/.test(raw);
     // Single space between groups so 16-digit cards fit in maxlength="19"
     el.value = isAmex
@@ -690,50 +838,327 @@ function onCardNumInput(el) {
 
 function onExpiryInput(el) {
     const raw = el.value.replace(/\D/g, '').substr(0, 4);
-    el.value  = raw.length >= 3 ? raw.substr(0, 2) + ' / ' + raw.substr(2) : raw;
+    el.value = raw.length >= 3 ? raw.substr(0, 2) + ' / ' + raw.substr(2) : raw;
 }
 
-function submitPayment() {
-    const num  = document.getElementById('co-cnum').value.replace(/\s/g, '');
-    const exp  = document.getElementById('co-exp').value;
-    const cvv  = document.getElementById('co-cvv').value;
-    const name = document.getElementById('co-cname').value.trim();
+async function submitPayment() {
+    const total = state.cart.reduce((s, i) => s + i.product.price * i.qty, 0);
+    const isFree = total === 0;
+    const email = (document.getElementById('co-email')?.value || '').trim();
+    const firstName = document.getElementById('co-fname')?.value || 'Valued Customer';
+    const lastName  = document.getElementById('co-lname')?.value || '';
+    const name = `${firstName} ${lastName}`.trim();
 
-    // Luhn check — 15 digits for AMEX, 16 for everything else
-    const isAmexNum = /^3[47]/.test(num);
-    const minLen = isAmexNum ? 15 : 16;
-    if (num.length < minLen || !luhn(num)) { showToast('Invalid card number'); return; }
+    if (!email) { showToast('Please enter your email'); return; }
 
-    // Expiry check
-    const parts = exp.replace(/\s/g, '').split('/');
-    const mm = parseInt(parts[0], 10);
-    const yy = parseInt(parts[1], 10);
-    const expDate = new Date(2000 + yy, mm);
-    if (!mm || !yy || mm > 12 || expDate <= new Date()) { showToast('Card expired or invalid expiry'); return; }
+    const usingStripe = !!(stripe && stripeCard);
 
-    // CVV check
-    if (cvv.length < 3) { showToast('Invalid CVV'); return; }
+    // ── DEBUG ──────────────────────────────────────────────────────────────
+    console.group('%c[Aether] submitPayment', 'color:#c9a96e;font-weight:bold');
+    console.log('total        :', total);
+    console.log('isFree       :', isFree);
+    console.log('stripe obj   :', stripe);
+    console.log('stripeCard   :', stripeCard);
+    console.log('usingStripe  :', usingStripe);
+    console.log('email        :', email);
+    console.groupEnd();
+    // ───────────────────────────────────────────────────────────────────────
 
-    // Name check
-    if (!name) { showToast('Please enter the name on your card'); return; }
+    // Manual card validation (only when Stripe Element is not mounted)
+    if (!isFree && !usingStripe) {
+        const cnum = document.getElementById('co-cnum')?.value.replace(/\s/g, '') || '';
+        const exp  = document.getElementById('co-exp')?.value || '';
+        const cvv  = document.getElementById('co-cvv')?.value || '';
+        if (!luhn(cnum)) { showToast('Invalid card number'); return; }
+        const parts = exp.replace(/\s/g, '').split('/');
+        const mm = parseInt(parts[0], 10);
+        const yy = parseInt(parts[1], 10);
+        const expYear = 2000 + (yy || 0);
+        const now = new Date();
+        if (!mm || !yy || expYear < now.getFullYear() ||
+            (expYear === now.getFullYear() && mm < now.getMonth() + 1)) {
+            showToast('Card expiry is invalid or in the past'); return;
+        }
+        if (!cvv || cvv.length < 3) { showToast('Invalid CVV'); return; }
+    }
 
     const btn = document.getElementById('co-pay-btn');
+    btn.disabled = true;
+    btn.innerHTML = 'Processing...';
     btn.classList.add('processing');
-    btn.innerHTML = '<span style="letter-spacing:2px">Processing&hellip;</span>';
 
-    setTimeout(() => {
-        btn.classList.remove('processing');
-        const total = state.cart.reduce((s, i) => s + i.product.price * i.qty, 0);
-        btn.innerHTML = `Pay <span>$${total.toLocaleString()}</span>`;
+    const ref = 'AE-' + Math.random().toString(36).substr(2, 8).toUpperCase();
 
-        // ── TO GO LIVE: send to your backend ─────────────────────────────────
-        // POST /api/charge  →  { cardNum, expiry, cvv, name, amount, cart }
-        // Your backend creates a Stripe PaymentIntent and confirms the charge.
-        // Stripe test card: 4242 4242 4242 4242  exp: any future  cvv: any 3 digits
-        // ─────────────────────────────────────────────────────────────────────
+    // ── Inner function: runs after payment is confirmed ──────────────────
+    const completeOrder = async () => {
+        document.getElementById('co-ref').innerText = ref;
 
-        document.getElementById('co-ref').innerText =
-            'AE-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        // Save order to Firestore
+        const orderData = {
+            ref,
+            items: state.cart.map(i => ({
+                name:  i.product.name,
+                price: i.product.price,
+                qty:   i.qty,
+                cat:   i.product.cat
+            })),
+            total,
+            email,
+            name,
+            address:   document.getElementById('co-addr')?.value || '',
+            city:      document.getElementById('co-city')?.value || '',
+            postCode:  document.getElementById('co-post')?.value || '',
+            status:    'completed',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (db && auth?.currentUser) {
+            try {
+                await db.collection('users').doc(auth.currentUser.uid)
+                    .collection('orders').doc(ref).set(orderData);
+            } catch(e) { console.warn('Firestore save failed:', e.message); }
+        }
+
+        // Build items text for email
+        const itemsText = state.cart
+            .map(i => `${i.product.name} x${i.qty} — $${(i.product.price * i.qty).toLocaleString()}`)
+            .join('\n');
+
+        // mailto fallback (always available)
+        const mailtoBody = [
+            `Hi ${firstName},`, ``,
+            `Your Aether order has been placed.`, ``,
+            `Order Reference: ${ref}`, ``,
+            `Items:`,
+            ...state.cart.map(i => `  ${i.product.name} x${i.qty}  —  $${(i.product.price * i.qty).toLocaleString()}`),
+            ``, `Total: $${total.toLocaleString()}`, ``,
+            `Thank you for your order.`, `— Aether Prestige`
+        ].join('\n');
+        window._lastOrderMailto = `mailto:${email}?subject=Your+Aether+Order+%E2%80%94+${ref}&body=${encodeURIComponent(mailtoBody)}`;
+        const mailBtn = document.getElementById('co-mailto-btn');
+        if (mailBtn) { mailBtn.style.display = 'inline-block'; mailBtn.href = window._lastOrderMailto; }
+
+        // Send confirmation email — 3-tier fallback
+        if (email) {
+            const emailPayload = {
+                to_name:     firstName,
+                to_email:    email,
+                order_ref:   ref,
+                order_items: itemsText,
+                order_total: `$${total.toLocaleString()}`
+            };
+            fetch('/.netlify/functions/send-order-email', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(emailPayload)
+            })
+            .then(r => r.json())
+            .then(json => {
+                if (json.success) { showToast('Confirmation email sent ✓'); }
+                else { throw new Error(json.error || 'Email function error'); }
+            })
+            .catch(() => {
+                // Tier 2: EmailJS
+                emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, emailPayload)
+                    .then(() => showToast('Confirmation email sent ✓'))
+                    .catch(() => { window.open(window._lastOrderMailto); });
+            });
+        }
+
         showCoStep(4);
-    }, 2500);
+        state.cart = [];
+        renderCart();
+    };
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Free order — skip Stripe (Stripe minimum is $0.50)
+    if (isFree) {
+        setTimeout(completeOrder, 1200);
+        return;
+    }
+
+    // Real charge via Stripe
+    if (usingStripe) {
+        try {
+            let resp;
+            try {
+                console.log('[Aether] → fetching create-payment-intent, amount:', total);
+                resp = await fetch('/.netlify/functions/create-payment-intent', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ amount: total, currency: 'usd', metadata: { ref, email } })
+                });
+                console.log('[Aether] ← function response status:', resp.status);
+            } catch(fetchErr) {
+                console.error('[Aether] fetch threw:', fetchErr);
+                throw new Error('Could not reach the payment server. Disable any ad blocker for this site and try again.');
+            }
+
+            if (!resp.ok) {
+                let errMsg = `Server error (${resp.status})`;
+                try { const j = await resp.json(); console.error('[Aether] error body:', j); if (j.error) errMsg = j.error; } catch(_) {}
+                throw new Error(errMsg);
+            }
+
+            const json = await resp.json();
+            console.log('[Aether] function JSON:', json);
+            if (json.error) throw new Error(json.error);
+            if (!json.clientSecret) throw new Error('No client secret returned from payment server.');
+
+            console.log('[Aether] → calling stripe.confirmCardPayment');
+            const { error, paymentIntent } = await stripe.confirmCardPayment(json.clientSecret, {
+                payment_method: { card: stripeCard, billing_details: { name, email } }
+            });
+            console.log('[Aether] ← confirmCardPayment result — error:', error, 'intent status:', paymentIntent?.status);
+
+            if (error) {
+                showToast(error.message);
+                btn.classList.remove('processing');
+                btn.disabled = false;
+                btn.innerHTML = `Pay <span>$${total.toLocaleString()}</span>`;
+                return;
+            }
+
+            if (paymentIntent.status === 'succeeded') await completeOrder();
+
+        } catch(e) {
+            console.error('Payment error:', e);
+            showToast(e.message || 'Payment failed — please try again');
+            btn.classList.remove('processing');
+            btn.disabled = false;
+            btn.innerHTML = `Pay <span>$${total.toLocaleString()}</span>`;
+        }
+    } else {
+        // Stripe not yet configured — simulate only (no real charge)
+        console.warn('[Aether] usingStripe=false — stripe:', !!stripe, 'stripeCard:', !!stripeCard, '— running simulated complete');
+        setTimeout(completeOrder, 1800);
+    }
+}
+
+
+
+// ============================================================
+// STRIPE ELEMENTS — layers on top of manual fields when configured
+// ============================================================
+function mountStripeCard() {
+    if (!stripe) return; // Manual fields are always visible as fallback
+
+    const container = document.getElementById('stripe-card-element');
+    if (!container) return;
+
+    // Show Stripe wrap, hide manual fields
+    const manualWrap = document.getElementById('manual-card-fields');
+    const stripeWrap = document.getElementById('stripe-card-wrap');
+    if (manualWrap) manualWrap.style.display = 'none';
+    if (stripeWrap) stripeWrap.style.display = 'block';
+
+    // Destroy existing element before remounting (prevents duplicates)
+    if (stripeCard) { stripeCard.destroy(); stripeCard = null; }
+
+    const elements = stripe.elements({
+        fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap' }]
+    });
+
+    stripeCard = elements.create('card', {
+        hidePostalCode: true,
+        style: {
+            base: {
+                color: '#e8e8e8',
+                fontFamily: '"Inter", system-ui, sans-serif',
+                fontSize: '14px',
+                fontSmoothing: 'antialiased',
+                '::placeholder': { color: 'rgba(255,255,255,0.28)' },
+                iconColor: 'rgba(255,255,255,0.45)'
+            },
+            invalid: { color: '#ff5555', iconColor: '#ff5555' }
+        }
+    });
+
+    stripeCard.mount(container);
+    stripeCard.on('change', e => {
+        const err = document.getElementById('stripe-card-errors');
+        if (err) err.innerText = e.error ? e.error.message : '';
+    });
+}
+
+// ============================================================
+// TRANSACTION HISTORY (Firestore)
+// ============================================================
+async function loadOrders() {
+    const listEl = document.getElementById('orders-list');
+    const loadingEl = document.getElementById('orders-loading');
+    if (!listEl) return;
+
+    if (!auth || !auth.currentUser) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        listEl.innerHTML = `
+            <div class="orders-empty">
+                <p class="description" style="text-align:center;margin-bottom:20px">
+                    Sign in to see your order history.
+                </p>
+                <button class="auth-close" onclick="toggleAuth()">Sign In &rarr;</button>
+            </div>`;
+        return;
+    }
+
+    if (!db) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        listEl.innerHTML = `<p class="description" style="text-align:center">Firestore not initialised.</p>`;
+        return;
+    }
+
+    try {
+        const snap = await db.collection('users')
+            .doc(auth.currentUser.uid)
+            .collection('orders')
+            .orderBy('timestamp', 'desc')
+            .get();
+
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        if (snap.empty) {
+            listEl.innerHTML = `
+                <div class="orders-empty">
+                    <p class="description" style="text-align:center;margin-bottom:20px">
+                        No orders yet &mdash; your purchases will appear here.
+                    </p>
+                    <button class="auth-close" onclick="showSection('shop')">Start Shopping &rarr;</button>
+                </div>`;
+            return;
+        }
+
+        listEl.innerHTML = snap.docs.map(doc => {
+            const o = doc.data();
+            const date = o.timestamp?.toDate
+                ? o.timestamp.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                : 'Recently';
+            const lineItems = (o.items || []).map(i =>
+                `<div class="order-item-line">
+                    <span>${i.name} &times; ${i.qty}</span>
+                    <span>$${(i.price * i.qty).toLocaleString()}</span>
+                </div>`
+            ).join('');
+
+            return `
+                <div class="order-card">
+                    <div class="order-card-head">
+                        <div>
+                            <span class="order-ref">${o.ref || doc.id}</span>
+                            <span class="order-date">${date}</span>
+                        </div>
+                        <span class="order-total-badge">$${(o.total || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="order-items-detail">${lineItems}</div>
+                    <div class="order-card-foot">
+                        <span class="order-status-done">&#10003;&nbsp; Completed</span>
+                        ${o.email ? `<span class="order-foot-email">${o.email}</span>` : ''}
+                    </div>
+                </div>`;
+        }).join('');
+
+    } catch (e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        listEl.innerHTML = `<p class="description" style="text-align:center">
+            Could not load orders: ${e.message}
+        </p>`;
+    }
 }

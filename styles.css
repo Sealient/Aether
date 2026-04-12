@@ -100,6 +100,22 @@ body::after {
     gap: 100px; align-items: center; 
 }
 
+/* Fix for the Main Modal Preview (The big one) */
+.object-display-box {
+    background-size: contain !important; /* Forces the whole image to show */
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-color: #080808; /* Black bars on sides/top if it doesn't fit */
+}
+
+/* Fix for the Grid Gallery (The smaller cards) */
+.product-card-visual {
+    background-size: contain !important;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: #0a0a0a;
+}
+
 .object-display-box { 
     height: 450px; background: rgba(255,255,255,0.02); 
     border: 1px solid var(--border); border-radius: 2px;
@@ -135,7 +151,20 @@ h2 {
 .selection-rail { position: absolute; bottom: 40px; display: flex; gap: 20px; }
 .rail-item { opacity: 0.3; cursor: pointer; transition: 0.3s; }
 .rail-item.active { opacity: 1; border-top: 2px solid var(--white); padding-top: 10px; }
-.thumb-box { width: 100px; height: 60px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); margin-bottom: 10px; }
+.thumb-box {
+    width: 80px;      /* Adjust to your design */
+    height: 80px;     /* Adjust to your design */
+    display: block;   /* Ensures it respects dimensions */
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    background-color: #111; /* Fallback color so you can see if it's there */
+}
+
+.rail-item.active .thumb-box {
+    border-color: var(--purple);
+    box-shadow: 0 0 10px rgba(157, 0, 255, 0.2);
+}
 .thumb-label { font-size: 9px; font-weight: 700; text-transform: uppercase; }
 
 /* --- Editorial "About Me" Section --- */
@@ -394,6 +423,149 @@ h2 {
    CHECKOUT MODAL
 ============================================ */
 
+/* Payment Step Layout */
+.co-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.co-row .input-group {
+    flex: 1;
+    margin-bottom: 0; /* Override default margin inside rows */
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.input-group label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--grey);
+    font-weight: 600;
+}
+
+/* Specific styling for the Card Number wrapper */
+.card-field-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.ctype-badge {
+    position: absolute;
+    right: 12px;
+    font-size: 10px;
+    color: var(--purple);
+    font-weight: bold;
+    pointer-events: none;
+}
+
+/* Secure Badge Styling */
+.co-secure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 24px;
+    padding: 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+}
+
+.price-action {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-top: 40px;
+    padding: 10px 10px 10px 30px;
+    background: var(--glass); /* Using your defined glass variable */
+    border: 1px solid var(--border);
+    border-radius: 100px; /* Pill shape for the container */
+    width: fit-content;
+    backdrop-filter: blur(10px);
+}
+
+.price {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--white);
+    letter-spacing: -1px;
+}
+
+.buy-trigger {
+    position: relative;
+    background: rgba(157, 0, 255, 0.2); /* Tinted transparent purple */
+    color: var(--white);
+    border: 1px solid rgba(157, 0, 255, 0.3);
+    padding: 14px 35px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-radius: 100px; /* Pill shape for the button */
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(5px);
+}
+
+.buy-trigger:hover {
+    background: var(--purple); /* Solid purple on hover for feedback */
+    border-color: var(--purple);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(157, 0, 255, 0.4);
+}
+
+/* Internal Shine Effect */
+.buy-trigger::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 20%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(30deg);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.buy-trigger:hover::after {
+    left: 120%;
+}
+
+/* Specific styling for the Address field to stand out */
+#co-addr {
+    margin-bottom: 12px;
+}
+
+/* Ensure all checkout inputs match the Aether theme */
+.co-panel input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    padding: 14px;
+    border-radius: 4px;
+    color: var(--white);
+    font-family: var(--font-main);
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.co-panel input:focus {
+    outline: none;
+    border-color: var(--purple);
+    background: rgba(157, 0, 255, 0.05);
+}
+
 .checkout-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.9);
@@ -548,7 +720,92 @@ h2 {
 .auth-user-name {
     font-size: 10px; font-weight: 700; color: var(--white);
     text-transform: uppercase; letter-spacing: 1.5px;
+    cursor: pointer; opacity: 0.9; transition: opacity 0.2s;
 }
+.auth-user-name:hover { opacity: 1; text-decoration: underline; }
+
+/* Stripe Element */
+.stripe-element {
+    background: var(--glass);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 13px 14px;
+    transition: border-color 0.2s;
+}
+.stripe-element:focus-within { border-color: rgba(255,255,255,0.25); }
+.stripe-errors {
+    color: #ff5555;
+    font-size: 12px;
+    margin-top: 6px;
+    min-height: 16px;
+    letter-spacing: 0.3px;
+}
+.stripe-warn {
+    background: rgba(255,200,0,0.07);
+    border: 1px solid rgba(255,200,0,0.2);
+    border-radius: 4px;
+    color: rgba(255,200,0,0.75);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+}
+.stripe-warn code { opacity: 0.8; font-size: 11px; }
+
+/* Order History */
+.orders-loading {
+    text-align: center;
+    color: rgba(255,255,255,0.36);
+    font-size: 13px;
+    padding: 48px 0;
+    letter-spacing: 1px;
+}
+.orders-empty { text-align: center; padding: 24px 0; }
+.order-card {
+    background: var(--glass);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+.order-card:hover { border-color: rgba(255,255,255,0.13); }
+.order-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.order-ref {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.4);
+    display: block;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+.order-date { font-size: 13px; color: rgba(255,255,255,0.75); }
+.order-total-badge { font-size: 17px; font-weight: 700; color: #fff; }
+.order-items-detail { padding: 10px 20px; }
+.order-item-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.order-item-line:last-child { border-bottom: none; }
+.order-card-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 20px;
+    background: rgba(255,255,255,0.016);
+}
+.order-status-done { color: #00cc66; font-size: 12px; letter-spacing: 0.5px; }
+.order-foot-email { font-size: 11px; color: rgba(255,255,255,0.3); }
 
 /* Mobile adjustments for checkout */
 @media (max-width: 620px) {
